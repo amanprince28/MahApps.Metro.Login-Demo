@@ -14,6 +14,9 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
+using System.Data.SqlClient;
+
+
 
 namespace MahApps.Metro.Application2
 {
@@ -22,6 +25,7 @@ namespace MahApps.Metro.Application2
     /// </summary>
     public partial class MainWindow : MetroWindow
     {
+        
         public MainWindow()
         {
             InitializeComponent();
@@ -29,17 +33,36 @@ namespace MahApps.Metro.Application2
 
         private async void MetroWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            Label:
             LoginDialogData result = await this.ShowLoginAsync("Authentication", "Enter your credentials" , new LoginDialogSettings { ColorScheme = this.MetroDialogOptions.ColorScheme });
-            if (result == null)
+            if (result != null)
+            {
+                SqlConnection con = new SqlConnection(@"Data Source=(LocalDB)\v11.0;AttachDbFilename=|DataDirectory|\Database1.mdf;Integrated Security=True");
+                con.Open();
+                string q = "select * from Login where User_Name='" + result.Username + "' and Password='" + result.Password + "'";
+                SqlCommand cmd = new SqlCommand(q, con);
+                SqlDataReader dr = cmd.ExecuteReader();
+                while(dr.Read())
+                {
+                    if (dr.HasRows == true)
+                    {
+                        MessageDialogResult messageResult = await this.ShowMessageAsync("Authentication Information", String.Format("Username: {0}\nPassword: {1}", result.Username, result.Password));
+                    }
+                    
+                }
+                if(dr.HasRows == false) 
+                {
+                    MessageDialogResult messageResult = await this.ShowMessageAsync("wrong Information", String.Format("Username: {0}\nPassword: {1}", result.Username, result.Password));
+                    goto Label;
+                }
+                
+            }
+            else if (result == null)
             {
                 this.Close();
-              
-                //User pressed cancel
             }
-            else
-            {
-                MessageDialogResult messageResult = await this.ShowMessageAsync("Authentication Information", String.Format("Username: {0}\nPassword: {1}", result.Username, result.Password));
-            }
+            
+            
         }
     }
 }
